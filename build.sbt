@@ -1,4 +1,4 @@
-name := "pyspark_cassandra"
+name := "pyspark-cassandra"
 
 version := "0.1.3"
 
