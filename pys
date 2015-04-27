@@ -1,0 +1,6 @@
+IPYTHON=1 pyspark \
+    --jars /Users/jhaddad/dev/pyspark-cassandra/target/pyspark_cassandra-0.1.1.jar  \
+    --driver-class-path /Users/jhaddad/dev/pyspark-cassandra/target/pyspark_cassandra-0.1.1.jar \
+    --py-files target/pyspark_cassandra-0.1.1-py2.7.egg \
+    --conf spark.cassandra.connection.host=127.0.0.1 \
+    --master spark://127.0.0.1:7077 \

@@ -1,9 +1,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,24 +20,24 @@ from pyspark_cassandra.types import as_java_array
 
 class RowFormat(object):
 	"""An enumeration of CQL row formats used in CassandraRDD"""
-	
+
 	DICT = 0
 	TUPLE = 1
 	KV_DICTS = 2
 	KV_TUPLES = 3
 	ROW = 4
-	
+
 	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW)
 
 
 class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
-	
+
 	def __init__(self, keyspace, table, ctx, row_format=None, split_size=None, fetch_size=None, consistency_level=None):
 		self.keyspace = keyspace
 		self.table = table
-		
+
 		if not row_format:
 			row_format = RowFormat.ROW
 		elif row_format < 0 or row_format >= len(RowFormat.values):
@@ -45,18 +45,19 @@ class CassandraRDD(RDD):
 
 		jvm = ctx._jvm
 		ReadConf = jvm.ReadConf
-		
+
 		split_size = split_size or ReadConf.DefaultSplitSize()
 		fetch_size = fetch_size or ReadConf.DefaultFetchSize()
 		consistency_level = jvm.ConsistencyLevel.values()[consistency_level] \
 			if consistency_level else ReadConf.DefaultConsistencyLevel()
-		
+
 		read_conf = ReadConf(
 			split_size,
 			fetch_size,
 			consistency_level,
+			False
 		)
-		
+
 		row_format = ctx._jvm.RowFormat.values()[row_format]
 		reader_factory = ctx._jvm.PickleRowReaderFactory(row_format)
 		jrdd = (
@@ -64,12 +65,12 @@ class CassandraRDD(RDD):
 				.cassandraTable(keyspace, table, reader_factory)
 				.withReadConf(read_conf)
 		)
-		
+
 		super(CassandraRDD, self).__init__(jrdd, ctx, PickleSerializer())
 
 
 	def select(self, *columns):
-		"""Creates a CassandraRDD with the select clause applied.""" 
+		"""Creates a CassandraRDD with the select clause applied."""
 
 		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
 		new = copy(self)
@@ -87,12 +88,12 @@ class CassandraRDD(RDD):
 		new = copy(self)
 		new._jrdd = new._jrdd.where(clause, args)
 		return new
-	
+
 	def __copy__(self):
 		c = CassandraRDD.__new__(CassandraRDD)
 		c.__dict__.update(self.__dict__)
 		return c
-	
+
 def saveToCassandra(
 		rdd, keyspace=None, table=None, columns=None,
 		batch_size=None, batch_buffer_size=None, batch_level=None,
@@ -113,7 +114,7 @@ def saveToCassandra(
 	Keyword arguments:
 	@param columns(iterable):
 		The columns to save, i.e. which keys to take from the dicts in the RDD.
-		If None given all columns are be stored. 
+		If None given all columns are be stored.
 	@param batch_size(int):
 		The size in bytes to batch up in an unlogged batch of CQL inserts.
 		If None given the default size of 16*1024 is used or spark.cassandra.output.batch.size.bytes if set.
@@ -123,7 +124,7 @@ def saveToCassandra(
 	@param batch_level(string):
 		The way batches are formed:
 		* all: any row can be added to any batch
-    	* replicaset: rows are batched for replica sets 
+    	* replicaset: rows are batched for replica sets
     	* partition: rows are batched by their partition key
     	* None: defaults to "partition"
 	@param consistency_level(cassandra.ConsistencyLevel):
@@ -142,13 +143,13 @@ def saveToCassandra(
 		Make explicit how to map the RDD elements into Cassandra rows.
 		If None given the mapping is auto-detected as far as possible.
 	"""
-	
+
 	keyspace = keyspace or rdd.keyspace
 	table = table or rdd.table
-	
+
 	if not keyspace:
 		raise ValueError("keyspace not set")
-	
+
 	if not table:
 		raise ValueError("table not set")
 
@@ -166,7 +167,7 @@ def saveToCassandra(
 	WriteConf = jvm.WriteConf
 
 	# determine the various values for WriteConf
-	# unfortunately the default values in WriteConf can't be used through py4j 
+	# unfortunately the default values in WriteConf can't be used through py4j
 	batch_size = jvm.BytesInBatch(batch_size or WriteConf.DefaultBatchSizeInBytes())
 	batch_buffer_size = batch_buffer_size or WriteConf.DefaultBatchBufferSize()
 	batch_level = jvm.__getattr__("BatchLevel$").__getattr__("MODULE$").apply(batch_level) \
@@ -193,7 +194,7 @@ def saveToCassandra(
 		ttl,
 		timestamp
 	)
-	
+
 	# determine the row format
 	row_format = jvm.RowFormat.values()[row_format] if row_format else None
 
