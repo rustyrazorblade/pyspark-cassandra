@@ -38,6 +38,7 @@ pyspark.context.SparkContext = CassandraSparkContext
 pyspark.rdd.RDD.saveToCassandra = saveToCassandra
 
 # streaming support
+
 def saveDStreamToCassandra(
         dstream, keyspace=None, table=None, columns=None,
         batch_size=None, batch_buffer_size=None, batch_grouping_key=None,
@@ -46,12 +47,12 @@ def saveDStreamToCassandra(
 ):
 
     def f(rdd):
-        return rdd.saveToCassandra(keyspace=keyspace, table=table, columns=columns,
-                            batch_size=batch_size, batch_buffer_size=batch_buffer_size, batch_grouping_key=batch_grouping_key,
-                            consistency_level=consistency_level, parallelism_level=parallelism_level, throughput_mibps=throughput_mibps,
-                            ttl=ttl, timestamp=timestamp, metrics_enabled=metrics_enabled, row_format=row_format)
+        saveToCassandra(rdd, keyspace=keyspace, table=table, columns=columns,
+                        batch_size=batch_size, batch_buffer_size=batch_buffer_size, batch_grouping_key=batch_grouping_key,
+                        consistency_level=consistency_level, parallelism_level=parallelism_level, throughput_mibps=throughput_mibps,
+                        ttl=ttl, timestamp=timestamp, metrics_enabled=metrics_enabled, row_format=row_format)
 
-    return dstream.foreachRDD(f)
+    dstream.foreachRDD(f)
 
 
 import pyspark.streaming.dstream
